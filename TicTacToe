@@ -1,0 +1,180 @@
+import pygame
+import sys
+import random
+
+from pygame import Rect
+
+pygame.init()
+
+HEIGHT = 300
+WIDTH = 300
+screen = pygame.display.set_mode([WIDTH, HEIGHT])
+pygame.display.set_caption('Tic-Tac-Toe')
+WHITE = (200, 200, 200)
+BEIGE = (208, 181, 154)
+BLACK = (0, 0, 0)
+GREEN = (124,252,0)
+D_GREEN = (1,50,32)
+RED =  (255, 0, 0)
+BLUE = (100,50,230)
+big_font = pygame.font.Font('freesansbold.ttf', 30)
+little_font = pygame.font.Font('freesansbold.ttf', 30)
+grid_size = 133
+
+c_wins = pygame.image.load('c_wins.png')
+x_wins = pygame.image.load('x_wins.png')
+bck = pygame.image.load('bck.png')
+
+# 0 - white turn, no selection: 1 - whites turn, piece selected: 2 - black turn, no selection: 3 - black turn piece selected
+circle_image = pygame.image.load('circle.png')
+turn_step = 0
+
+
+restart_rect = Rect(WIDTH // 2 - 80, HEIGHT // 2, 160, 50)
+
+markers = []
+clicked = False
+pos = []
+player = 1
+winner = 0
+game_over = False
+
+for x in range(3): # set an initial values for each square equal to 0
+    row = [0] * 3
+    markers.append(row)
+
+def draw_board():
+    for x in range(1,3):
+        pygame.draw.line(screen, BLACK, (0, x*100), (WIDTH, x*100), 4)
+        pygame.draw.line(screen, BLACK, (x*100, 0), (x*100, HEIGHT), 4)
+
+
+
+def draw_markers():
+    x_pos = 0 # set initial x pos for the x's and o's
+    for x in markers: # simply rotate through markers
+        y_pos = 0
+        for y in x:
+            if y == 1: # player 1
+                pygame.draw.line(screen, BLACK, (x_pos * 100 + 15, y_pos * 100 + 15), (x_pos * 100 + 85, y_pos * 100 + 85), 3) # drawing x's from bottome right to top left
+                pygame.draw.line(screen, BLACK, (x_pos * 100 + 15, y_pos * 100 + 85), (x_pos * 100 + 85, y_pos * 100 + 15), 3) # drawing x's from bottom left to top right
+            if y == -1: # player 2
+                pygame.draw.circle(screen, RED, (x_pos * 100 + 50, y_pos * 100 + 50), 38, 3)
+            y_pos += 1
+
+
+        x_pos += 1
+
+
+
+def check_endings():
+    global winner
+    global game_over
+    y_pos = 0
+    for x in markers:
+        #check columns
+        if sum(x) == 3:
+            winner = 1
+            game_over = True
+        if sum(x) == - 3:
+            winner = 2
+            game_over = True
+        #check rows
+        if markers[0][y_pos] + markers[1][y_pos] + markers[2][y_pos] == 3:
+            winner = 1
+            game_over = True
+        if markers[0][y_pos] + markers[1][y_pos] + markers[2][y_pos] == - 3:
+            winner = 2
+            game_over = True
+        y_pos += 1
+        #check cross
+        if markers[0][0] + markers[1][1] + markers[2][2] == 3 or markers[2][0] + markers[1][1] + markers[0][2] == 3:
+            winner = 1
+            game_over = True
+        if markers[0][0] + markers[1][1] + markers[2][2] == -3 or markers[2][0] + markers[1][1] + markers[0][2] == - 3:
+            winner = 2
+            game_over = True
+        #check stalemates
+        if sum(x) + sum(x) + sum(x) == 1:
+            game_over = True
+            winner = []
+
+
+def stalemate_prompt():
+    stalemate_txt = 'Its a Tie!'
+    stalemate_image = big_font.render(stalemate_txt, True, RED)
+    pygame.draw.rect(screen, BLACK, (WIDTH // 2 - 100, HEIGHT // 2 - 60, 210, 50))
+    screen.blit(stalemate_image, (WIDTH // 2 - 100, HEIGHT // 2 - 50))
+
+    restart_txt = 'Restart?'
+    restart_img = little_font.render(restart_txt, True, RED)
+    pygame.draw.rect(screen, BLACK, restart_rect)
+    screen.blit(restart_img, (WIDTH // 2 - 60, HEIGHT // 2 + 20))
+
+def display_winner(winner):
+    win_text = 'Player ' + str(winner) + ' Wins!'
+    win_image = big_font.render(win_text, True, RED)
+    pygame.draw.rect(screen, BLACK, (WIDTH // 2 - 100, HEIGHT // 2 - 60, 210, 50))
+    screen.blit(win_image, (WIDTH // 2 - 100, HEIGHT // 2 - 50))
+
+    restart_txt = 'Restart?'
+    restart_img = little_font.render(restart_txt, True, RED)
+    pygame.draw.rect(screen, BLACK, restart_rect)
+    screen.blit(restart_img, (WIDTH // 2 - 60, HEIGHT // 2 + 20))
+
+
+running = True
+while True:
+    screen.blit(bck, (0, 0))
+    pygame.display.flip()
+
+
+# event handling
+    while True:
+        draw_board()
+        draw_markers()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if game_over == 0:
+                if event.type == pygame.MOUSEBUTTONDOWN and clicked == False:
+                    clicked = True
+                if event.type == pygame.MOUSEBUTTONUP and clicked == True:
+                    clicked = False
+                    pos = pygame.mouse.get_pos()
+                    cell_x = pos[0]
+                    cell_y = pos[1]
+                    if markers[cell_x // 100][cell_y // 100] == 0: # divide each cell by 100 because the width and height is at 300
+                        # that way when using floor division // the mous position at x=100 will be 1, and at x=200 will be 2 and etc
+                        markers[cell_x // 100][cell_y // 100] = player # in my markers list I had initially set all values of
+                        # each square to 0's. So the grid looks like 000 000 000. By checking if the cell (cell x and cell y) is stil equal
+                        # to 0 then we can initialize the game to start at player 1 as done below
+                        player *= -1
+                        check_endings()
+
+            if game_over == True: # doesn't work
+                if winner != []:
+                    display_winner(winner)
+                else:
+                    stalemate_prompt()
+                if event.type == pygame.MOUSEBUTTONDOWN and clicked == False:
+                    clicked = True
+                if event.type == pygame.MOUSEBUTTONUP and clicked == True:
+                    clicked = False
+                    pos = pygame.mouse.get_pos()
+                    if restart_rect.collidepoint(pos):
+                        screen.blit(bck, (0, 0))
+                        draw_board()
+                        pygame.display.flip()
+                        markers = []
+                        pos = []
+                        player = 1
+                        winner = 0
+                        game_over = False
+                        for x in range(3):  # set an initial values for each square equal to 0
+                            row = [0] * 3
+                            markers.append(row)
+
+            pygame.display.update()
